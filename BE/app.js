@@ -13,8 +13,6 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Phục vụ các tệp tĩnh (HTML, CSS, JS) từ thư mục gốc của ứng dụng
-// Điều này giả định index.html, style.css, script.js nằm cùng cấp với app.js
 app.use(express.static(path.join(__dirname, '')));
 
 // Database configuration
