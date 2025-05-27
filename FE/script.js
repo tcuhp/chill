@@ -4,10 +4,8 @@ const API_BASE_URL = 'http://localhost:3000/api';
 let rooms = [];
 let editingId = null;
 
-// React Components Integration
 const { useState, useEffect } = React;
 
-// Custom Hook for Format Utils
 const useFormatUtils = () => {
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('vi-VN', {
@@ -33,7 +31,6 @@ const useFormatUtils = () => {
     return { formatCurrency, getStatusBadge };
 };
 
-// React Component for Room Stats
 const RoomStats = ({ rooms }) => {
     const available = rooms.filter(r => r.status === 'available').length;
     const occupied = rooms.filter(r => r.status === 'occupied').length;
@@ -67,7 +64,6 @@ const RoomStats = ({ rooms }) => {
     ]);
 };
 
-// React Component for Search Bar
 const SearchBar = ({ rooms, onSearchResults }) => {
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -107,51 +103,56 @@ const SearchBar = ({ rooms, onSearchResults }) => {
     ]);
 };
 
-// Initialize React components after DOM is loaded
-let searchResultsState = [];
+let searchRoot = null;
+let statsRoot = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     await loadRooms();
     initializeReactComponents();
 
-    // Keep existing event listeners for form
     document.getElementById('addBtn').addEventListener('click', handleAdd);
     document.getElementById('updateBtn').addEventListener('click', handleUpdate);
 });
 
 function initializeReactComponents() {
-    // Initialize Search Component
     const searchContainer = document.querySelector('.search-container');
-    if (searchContainer) {
-        const searchRoot = ReactDOM.createRoot(searchContainer);
+    if (searchContainer && !searchRoot) {
+        searchRoot = ReactDOM.createRoot(searchContainer);
+    }
+    
+    if (searchRoot) {
         searchRoot.render(
             React.createElement(SearchBar, {
                 rooms: rooms,
                 onSearchResults: (results) => {
-                    searchResultsState = results;
                     displayRooms(results);
                 }
             })
         );
     }
 
-    // Initialize Stats Component
+ 
     updateReactStats();
 }
 
 function updateReactStats() {
     const statsContainer = document.querySelector('.room-stats');
-    if (statsContainer) {
-        const statsRoot = ReactDOM.createRoot(statsContainer);
+    if (statsContainer && !statsRoot) {
+        statsRoot = ReactDOM.createRoot(statsContainer);
+    }
+    
+    if (statsRoot) {
         statsRoot.render(
             React.createElement(RoomStats, { rooms: rooms })
         );
     }
 }
 
-// API Functions (unchanged)
+
 async function apiCall(url, options = {}) {
     try {
+        console.log('API Call:', url, options); 
+        
         const response = await fetch(`${API_BASE_URL}${url}`, {
             headers: {
                 'Content-Type': 'application/json',
@@ -160,12 +161,20 @@ async function apiCall(url, options = {}) {
             ...options,
         });
 
+        const responseText = await response.text();
+        console.log('API Response:', response.status, responseText); // Debug log
+
         if (!response.ok) {
-            const error = await response.json();
+            let error;
+            try {
+                error = JSON.parse(responseText);
+            } catch (e) {
+                error = { error: responseText || `HTTP error! status: ${response.status}` };
+            }
             throw new Error(error.error || `HTTP error! status: ${response.status}`);
         }
 
-        return await response.json();
+        return responseText ? JSON.parse(responseText) : {};
     } catch (error) {
         console.error('API Error:', error);
         throw error;
@@ -178,9 +187,10 @@ async function loadRooms() {
         rooms = await apiCall('/rooms');
         console.log('Rooms loaded:', rooms);
         displayRooms(rooms);
-        updateReactStats(); // Update React stats component
+        updateReactStats();
         hideMessage();
     } catch (error) {
+        console.error('Load rooms error:', error);
         showMessage('Lỗi khi tải dữ liệu: ' + error.message, 'error');
     }
 }
@@ -205,7 +215,7 @@ async function deleteRoomAPI(id) {
     });
 }
 
-// Display Functions - Updated to use React format utils
+
 function displayRooms(roomsToShow) {
     const tbody = document.getElementById('roomList');
     tbody.innerHTML = '';
@@ -222,7 +232,7 @@ function displayRooms(roomsToShow) {
         return;
     }
 
-    // Use format utils from React hook
+  
     const { formatCurrency, getStatusBadge } = useFormatUtils();
 
     roomsToShow.forEach(room => {
@@ -248,22 +258,25 @@ function displayRooms(roomsToShow) {
     });
 }
 
-// Event Handlers (updated to work with React components)
+
 async function handleAdd() {
     const formData = getFormData();
+    console.log('Form data for add:', formData); 
+    
     if (!validateForm(formData)) return;
 
     try {
         showMessage('Đang thêm phòng...', 'info');
         const newRoom = await createRoom(formData);
-        rooms.push(newRoom);
+        console.log('New room created:', newRoom); 
         
+    
+        await loadRooms();
+        initializeReactComponents();
         resetForm();
-        displayRooms(rooms);
-        updateReactStats(); // Update React stats
-        initializeReactComponents(); // Reinitialize search with new data
         showMessage('Thêm phòng thành công!', 'success');
     } catch (error) {
+        console.error('Add room error:', error);
         showMessage('Lỗi khi thêm phòng: ' + error.message, 'error');
     }
 }
@@ -272,30 +285,35 @@ async function handleUpdate() {
     if (editingId === null) return;
 
     const formData = getFormData();
+    console.log('Form data for update:', formData, 'ID:', editingId); // Debug log
+    
     if (!validateForm(formData)) return;
 
     try {
         showMessage('Đang cập nhật phòng...', 'info');
-        const updatedRoom = await updateRoom(editingId, formData);
+        const result = await updateRoom(editingId, formData);
+        console.log('Room updated:', result); 
         
-        const roomIndex = rooms.findIndex(room => room.id === editingId);
-        if (roomIndex !== -1) {
-            rooms[roomIndex] = updatedRoom;
-        }
-        
+    
+        await loadRooms();
+        initializeReactComponents();
         resetForm();
-        displayRooms(rooms);
-        updateReactStats(); // Update React stats
-        initializeReactComponents(); // Reinitialize search with updated data
         showMessage('Cập nhật phòng thành công!', 'success');
     } catch (error) {
+        console.error('Update room error:', error);
         showMessage('Lỗi khi cập nhật phòng: ' + error.message, 'error');
     }
 }
 
 function editRoom(id) {
+    console.log('Edit room:', id); 
     const room = rooms.find(r => r.id === id);
-    if (!room) return;
+    if (!room) {
+        console.error('Room not found:', id);
+        return;
+    }
+
+    console.log('Found room:', room); 
 
     document.getElementById('roomNumber').value = room.room_number;
     document.getElementById('roomType').value = room.room_type;
@@ -307,54 +325,87 @@ function editRoom(id) {
     document.getElementById('addBtn').disabled = true;
     document.getElementById('updateBtn').disabled = false;
     document.getElementById('formTitle').textContent = 'Cập nhật phòng';
+    
+  
+    document.querySelector('.form-section').scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' 
+    });
 }
 
 async function deleteRoom(id) {
+    console.log('Delete room:', id); 
     const room = rooms.find(r => r.id === id);
-    if (!room) return;
+    if (!room) {
+        console.error('Room not found:', id);
+        return;
+    }
 
     if (confirm(`Bạn có chắc muốn xóa phòng ${room.room_number}?`)) {
         try {
             showMessage('Đang xóa phòng...', 'info');
-            await deleteRoomAPI(id);
-            rooms = rooms.filter(r => r.id !== id);
-            displayRooms(rooms);
-            updateReactStats(); // Update React stats
-            initializeReactComponents(); // Reinitialize search with updated data
+            const result = await deleteRoomAPI(id);
+            console.log('Room deleted:', result); 
+            
+        
+            await loadRooms();
+            initializeReactComponents();
             showMessage('Xóa phòng thành công!', 'success');
         } catch (error) {
+            console.error('Delete room error:', error);
             showMessage('Lỗi khi xóa phòng: ' + error.message, 'error');
         }
     }
 }
 
-// Helper Functions (unchanged)
+
 function getFormData() {
-    return {
-        room_number: document.getElementById('roomNumber').value.trim(),
-        room_type: document.getElementById('roomType').value,
-        price: parseInt(document.getElementById('price').value) || 0,
+    const formData = {
+        roomNumber: document.getElementById('roomNumber').value.trim(),
+        roomType: document.getElementById('roomType').value,
+        price: parseFloat(document.getElementById('price').value) || 0,
         capacity: parseInt(document.getElementById('capacity').value) || 0,
         status: document.getElementById('status').value
     };
+    
+    console.log('Raw form data:', formData); 
+    return formData;
 }
 
 function validateForm(data) {
-    if (!data.room_number || !data.room_type || !data.price || !data.capacity || !data.status) {
+    console.log('Validating form data:', data); 
+    
+    if (!data.roomNumber || !data.roomType || !data.price || !data.capacity || !data.status) {
+        console.log('Missing fields validation failed');
         showMessage('Vui lòng điền đầy đủ thông tin!', 'error');
         return false;
     }
 
     if (data.price <= 0) {
+        console.log('Price validation failed:', data.price);
         showMessage('Giá phòng phải lớn hơn 0!', 'error');
         return false;
     }
 
     if (data.capacity <= 0) {
+        console.log('Capacity validation failed:', data.capacity);
         showMessage('Sức chứa phải lớn hơn 0!', 'error');
         return false;
     }
 
+    
+    const duplicateRoom = rooms.find(room => 
+        room.room_number === data.roomNumber && 
+        room.id !== editingId
+    );
+    
+    if (duplicateRoom) {
+        console.log('Duplicate room number:', data.roomNumber);
+        showMessage('Số phòng đã tồn tại!', 'error');
+        return false;
+    }
+
+    console.log('Validation passed');
     return true;
 }
 
@@ -383,14 +434,13 @@ function hideMessage() {
     messageEl.classList.remove('show');
 }
 
-// Auto-refresh data every 30 seconds
 setInterval(async () => {
-    if (document.visibilityState === 'visible') {
+    if (document.visibilityState === 'visible' && editingId === null) {
         try {
             await loadRooms();
-            initializeReactComponents(); // Reinitialize React components with fresh data
+            initializeReactComponents();
         } catch (error) {
             console.error('Auto-refresh failed:', error);
         }
     }
-}, 30000);
+}, 10000);

@@ -8,7 +8,7 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
+
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -16,7 +16,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use(express.static(path.join(__dirname, '')));
 
-// Database configuration
+
 const dbConfig = {
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
@@ -27,10 +27,10 @@ const dbConfig = {
     queueLimit: 0
 };
 
-// tao ket noi toi database
+// tao ket noi 
 const pool = mysql.createPool(dbConfig);
 
-//kiem tra ket noi toi database
+//kiem tra ket noi 
 async function testConnection() {
     try {
         const connection = await pool.getConnection();
@@ -93,18 +93,22 @@ app.put('/api/rooms/:id', async (req, res) => {
     }
 });
 
-// xoa phong 
+// xoa
 app.delete('/api/rooms/:id', async (req, res) => {
-    const { id } = req.params;
+    const { id } = req.params; 
     try {
-        const [result] = await pool.execute('DELETE FROM rooms WHERE id = ?', [id]);
+        const [result] = await pool.execute('DELETE FROM rooms WHERE id = ?', [id]); 
+
         if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Room not found' });
+            console.warn(`Attempted to delete non-existent room with ID: ${id}`);
+            return res.status(404).json({ error: 'Không tìm thấy phòng để xóa.' });
         }
-        res.json({ message: 'Room deleted successfully' });
+
+        console.log(`Room with ID: ${id} deleted successfully.`);
+        res.json({ message: 'Phòng đã được xóa thành công.' });
     } catch (error) {
-        console.error('Error deleting room:', error);
-        res.status(500).json({ error: 'Failed to delete room' });
+        console.error(`Lỗi khi xóa phòng với ID: ${id}:`, error);
+        res.status(500).json({ error: 'Đã xảy ra lỗi khi xóa phòng. Vui lòng thử lại.' });
     }
 });
 
@@ -145,7 +149,7 @@ app.get('/api/rooms/stats', async (req, res) => {
     }
 });
 
-// Error handling middleware
+
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).json({ error: 'Something went wrong!' });
