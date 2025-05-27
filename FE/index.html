@@ -7,6 +7,10 @@
     <title>Quản lý Khách sạn</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
+    
+    <!-- React CDN -->
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
 </head>
 
 <body>
@@ -16,9 +20,9 @@
                 <h1><i class="fas fa-hotel"></i> QUẢN LÝ KHÁCH SẠN</h1>
             </div>
 
+            <!-- Search container sẽ được React component thay thế -->
             <div class="search-container">
-                <input type="text" id="searchInput" class="search-input" placeholder="Tìm kiếm theo số phòng, loại phòng...">
-                <i class="fas fa-search search-icon"></i>
+                <!-- React SearchBar component sẽ render ở đây -->
             </div>
 
             <div class="form-section">
@@ -85,19 +89,9 @@
                         <i class="fas fa-bed"></i>
                         Danh sách phòng
                     </div>
+                    <!-- Room stats sẽ được React component thay thế -->
                     <div class="room-stats">
-                        <div class="stat">
-                            <i class="fas fa-circle" style="color: #10b981;"></i>
-                            <span>Trống: <span id="availableCount">0</span></span>
-                        </div>
-                        <div class="stat">
-                            <i class="fas fa-circle" style="color: #ef4444;"></i>
-                            <span>Đã đặt: <span id="occupiedCount">0</span></span>
-                        </div>
-                        <div class="stat">
-                            <i class="fas fa-circle" style="color: #f59e0b;"></i>
-                            <span>Bảo trì: <span id="maintenanceCount">0</span></span>
-                        </div>
+                        <!-- React RoomStats component sẽ render ở đây -->
                     </div>
                 </div>
 
@@ -117,7 +111,8 @@
             </div>
         </div>
     </div>
-     <script src="script.js"></script>
+    
+    <!-- Load updated script with React integration -->
+    <script src="script.js"></script>
 </body>
-
 </html>

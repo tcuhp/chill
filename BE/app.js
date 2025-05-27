@@ -2,8 +2,8 @@ const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const path = require('path');
 require('dotenv').config();
-const path = require('path'); // Thêm module 'path' để xử lý đường dẫn
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,6 +12,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
 
 app.use(express.static(path.join(__dirname, '')));
 
@@ -26,23 +27,28 @@ const dbConfig = {
     queueLimit: 0
 };
 
-// Create connection pool
+// tao ket noi toi database
 const pool = mysql.createPool(dbConfig);
 
-// Test database connection
+//kiem tra ket noi toi database
 async function testConnection() {
     try {
         const connection = await pool.getConnection();
         console.log('✅ Database connected successfully');
         connection.release();
     } catch (error) {
-        console.error('❌ Database connection failed:', error.message);
+        console.error(' Database connection failed:', error.message);
     }
 }
 
-// Routes
 
-// Get all rooms
+app.use(express.static(path.join(__dirname, '../FE')));
+
+// Route 
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../FE/index.html'));
+});
+
 app.get('/api/rooms', async (req, res) => {
     try {
         const [rows] = await pool.execute('SELECT * FROM rooms');
@@ -53,7 +59,7 @@ app.get('/api/rooms', async (req, res) => {
     }
 });
 
-// Add a new room
+// them phong 
 app.post('/api/rooms', async (req, res) => {
     const { roomNumber, roomType, price, capacity, status } = req.body;
     try {
@@ -68,7 +74,7 @@ app.post('/api/rooms', async (req, res) => {
     }
 });
 
-// Update a room
+// edit phong 
 app.put('/api/rooms/:id', async (req, res) => {
     const { id } = req.params;
     const { roomNumber, roomType, price, capacity, status } = req.body;
@@ -87,7 +93,7 @@ app.put('/api/rooms/:id', async (req, res) => {
     }
 });
 
-// Delete a room
+// xoa phong 
 app.delete('/api/rooms/:id', async (req, res) => {
     const { id } = req.params;
     try {
@@ -102,7 +108,7 @@ app.delete('/api/rooms/:id', async (req, res) => {
     }
 });
 
-// Search rooms
+// tim phong 
 app.get('/api/rooms/search', async (req, res) => {
     const searchTerm = req.query.q;
     if (!searchTerm) {
@@ -121,7 +127,6 @@ app.get('/api/rooms/search', async (req, res) => {
     }
 });
 
-// Get room statistics
 app.get('/api/rooms/stats', async (req, res) => {
     try {
         const [stats] = await pool.execute(`
@@ -146,14 +151,14 @@ app.use((err, req, res, next) => {
     res.status(500).json({ error: 'Something went wrong!' });
 });
 
-// 404 handler
+// 404 
 app.use((req, res) => {
     res.status(404).json({ error: 'Route not found' });
 });
 
-// Start the server
+// bat dau vao sv 
 app.listen(PORT, async () => {
     console.log(`Server is running on port ${PORT}`);
     console.log(`Frontend: http://localhost:${PORT}`);
-    await testConnection(); // Test database connection on startup
+    await testConnection(); 
 });
